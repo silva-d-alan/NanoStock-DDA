@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 1. Copia o pacote compartilhado
+COPY packages/shared-types ./packages/shared-types
+
+# 2. Copia o backend
+COPY apps/backend ./apps/backend
+
+# 3. Entra na pasta do backend
+WORKDIR /app/apps/backend
+
+# 4. Instala as dependências do backend
+RUN npm install --ignore-workspace
+
+# 5. Instala o pacote compartilhado diretamente na pasta do backend
+RUN npm install ../../packages/shared-types
+
+# 6. Executa o build
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["node", "dist/main"]

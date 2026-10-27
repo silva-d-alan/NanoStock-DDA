@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -13,6 +11,35 @@ services:
       - "5433:5432"
     volumes:
       - dda-postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: dda-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=dda_estoque
+      - JWT_SECRET=chave-super-secreta-troque-em-producao
+      - JWT_EXPIRES_IN=8h
+      - PORT=3000
+    depends_on:
+      - postgres
+
+  frontend:
+    build: ./apps/frontend
+    container_name: dda-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
 
 volumes:
   dda-postgres-data:

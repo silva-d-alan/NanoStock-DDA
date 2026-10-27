@@ -145,11 +145,11 @@ export default function MovimentacoesPage() {
                 <label className="block text-sm font-medium mb-1">Tipo</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="ENTRADA" checked={form.tipo === 'ENTRADA'} onChange={e => setForm({...form, tipo: 'ENTRADA'})} />
+                    <input type="radio" value="ENTRADA" checked={form.tipo === 'ENTRADA'} onChange={() => setForm({...form, tipo: 'ENTRADA'})} />
                     Entrada
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="SAIDA" checked={form.tipo === 'SAIDA'} onChange={e => setForm({...form, tipo: 'SAIDA'})} />
+                    <input type="radio" value="SAIDA" checked={form.tipo === 'SAIDA'} onChange={() => setForm({...form, tipo: 'SAIDA'})} />
                     Saída
                   </label>
                 </div>
