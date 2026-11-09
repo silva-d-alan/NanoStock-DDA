@@ -4,7 +4,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PastilhasPage from './pages/PastilhasPage';
 import MovimentacoesPage from './pages/MovimentacoesPage';
-import AlertasPage from './pages/AlertasPage'; // <-- Importação (já deve estar aqui)
+import AlertasPage from './pages/AlertasPage';
+import FabricantesPage from './pages/FabricantesPage';
 import Layout from './components/Layout';
 
 const queryClient = new QueryClient({
@@ -36,11 +37,11 @@ export default function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="pastilhas" element={<PastilhasPage />} />
+            <Route path="fabricantes" element={<FabricantesPage />} />
             <Route path="movimentacoes" element={<MovimentacoesPage />} />
-            {/* 👇 ESSA É A LINHA QUE FALTAVA! 👇 */}
-            <Route path="alertas" element={<AlertasPage />} /> 
+            <Route path="alertas" element={<AlertasPage />} />
           </Route>
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

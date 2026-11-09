@@ -13,13 +13,13 @@ export default function Layout() {
   const menu = [
     { nome: 'Dashboard', path: '/' },
     { nome: 'Pastilhas', path: '/pastilhas' },
+    { nome: 'Fabricantes', path: '/fabricantes' },
     { nome: 'Movimentações', path: '/movimentacoes' },
     { nome: 'Alertas', path: '/alertas' },
   ];
 
   return (
     <div className="min-h-screen flex bg-slate-100">
-      {/* Menu Lateral */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
         <div className="p-6 flex items-center gap-3 border-b border-slate-800">
           <img src="/logo.png" alt="NanoStock" className="w-10 h-10 object-contain rounded-lg" />
@@ -54,7 +54,6 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Conteúdo das Páginas */}
       <main className="flex-1 p-8 overflow-y-auto h-screen">
         <Outlet />
       </main>
