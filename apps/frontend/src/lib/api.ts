@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:3000', // Forçando a porta correta
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
 });
 
 api.interceptors.request.use((config) => {
@@ -10,11 +10,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Vamos DESATIVAR o redirecionamento automático por enquanto para descobrir o erro
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('Erro na API:', error.message, error.response?.data);
+    const naTelaDeLogin = window.location.pathname.includes('/login');
+    if (error.response?.status === 401 && !naTelaDeLogin) {
+      localStorage.clear();
+      window.location.href = '/login';
+    }
     return Promise.reject(error);
   }
 );
