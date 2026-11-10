@@ -5,8 +5,10 @@ import DashboardPage from './pages/DashboardPage';
 import PastilhasPage from './pages/PastilhasPage';
 import MovimentacoesPage from './pages/MovimentacoesPage';
 import AlertasPage from './pages/AlertasPage';
+import UsuariosPage from './pages/UsuariosPage'; // <-- APENAS UMA VEZ
 import FabricantesPage from './pages/FabricantesPage';
 import Layout from './components/Layout';
+
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 30_000 } },
@@ -40,6 +42,8 @@ export default function App() {
             <Route path="fabricantes" element={<FabricantesPage />} />
             <Route path="movimentacoes" element={<MovimentacoesPage />} />
             <Route path="alertas" element={<AlertasPage />} />
+            <Route path="usuarios" element={<UsuariosPage />} />
+         
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

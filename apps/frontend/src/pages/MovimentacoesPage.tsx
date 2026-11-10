@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function MovimentacoesPage() {
   const queryClient = useQueryClient();
@@ -46,33 +48,46 @@ export default function MovimentacoesPage() {
   }
 
   // ==========================================
-  // FUNÇÃO PARA EXPORTAR O RELATÓRIO CSV
+  // FUNÇÃO PARA EXPORTAR O RELATÓRIO PDF
   // ==========================================
-  function exportarCSV() {
+    function exportarPDF() {
     if (!movimentacoes || movimentacoes.length === 0) {
       alert("Não há movimentações para exportar.");
       return;
     }
 
-    // Cria o cabeçalho do CSV
-    let csvContent = "Data,Tipo,Produto,Quantidade,Usuario,Observacao\n";
+    // Cria um novo documento PDF (orientação paisagem 'l' para caber a tabela)
+    const doc = new jsPDF('l', 'mm', 'a4');
 
-    // Preenche os dados
-    movimentacoes.forEach((m: any) => {
-      const data = new Date(m.data).toLocaleDateString('pt-BR');
-      const obs = m.observacao ? m.observacao.replace(/,/g, ';') : '';
-      csvContent += `${data},${m.tipo},${m.pastilha?.descricao},${m.quantidade},${m.usuario?.nome},${obs}\n`;
+    // Cabeçalho do PDF
+    doc.setFontSize(18);
+    doc.text("Relatório de Movimentações - NanoStock", 14, 20);
+    
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 28);
+
+    // Prepara os dados da tabela
+    const dadosTabela = movimentacoes.map((m: any) => [
+      new Date(m.data).toLocaleDateString('pt-BR'),
+      m.tipo,
+      m.pastilha?.descricao || 'N/A',
+      m.quantidade,
+      m.usuario?.nome || 'N/A',
+      m.observacao || '-'
+    ]);
+
+    // Desenha a tabela no PDF
+    autoTable(doc, {
+      startY: 35,
+      head: [['Data', 'Tipo', 'Pastilha', 'Qtd', 'Usuário', 'Observação']],
+      body: dadosTabela,
+      theme: 'striped',
+      headStyles: { fillColor: [37, 99, 235] }, // Azul bonito
+      styles: { fontSize: 9 }
     });
 
-    // Faz o download no navegador (Uint8Array ajuda o Excel a reconhecer os acentos)
-    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `relatorio_movimentacoes_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Faz o download
+    doc.save(`relatorio_movimentacoes_${new Date().toISOString().split('T')[0]}.pdf`);
   }
 
   return (
@@ -83,7 +98,7 @@ export default function MovimentacoesPage() {
         {/* BOTÕES NO TOPO DA TELA */}
         <div className="flex gap-3">
           <button 
-            onClick={exportarCSV} 
+            onClick={exportarPDF} 
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
           >
             Exportar Relatório
