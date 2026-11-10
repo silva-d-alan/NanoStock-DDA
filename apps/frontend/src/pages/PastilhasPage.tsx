@@ -113,7 +113,7 @@ export default function PastilhasPage() {
               <tr>
                 <th className="p-4 font-medium text-slate-600">Código</th>
                 <th className="p-4 font-medium text-slate-600">Descrição</th>
-                <th className="p-4 font-medium text-slate-600">Fabricante</th>
+                <th className="p-4 font-medium text-slate-600">Fornecedor</th> {/* <-- Alterado */}
                 <th className="p-4 font-medium text-slate-600 text-center">Estoque Atual</th>
                 <th className="p-4 font-medium text-slate-600 text-center">Estoque Mínimo</th>
                 <th className="p-4 font-medium text-slate-600 text-right">Ações</th>
@@ -124,7 +124,7 @@ export default function PastilhasPage() {
                 <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="p-4 font-mono text-sm">{p.codigo}</td>
                   <td className="p-4 font-medium">{p.descricao}</td>
-                  <td className="p-4 text-slate-500">{p.fabricante?.nome || 'Sem fabricante'}</td>
+                  <td className="p-4 text-slate-500">{p.fabricante?.nome || 'Sem fornecedor'}</td> {/* <-- Alterado */}
                   <td className="p-4 text-center">
                     <span className={`px-3 py-1 rounded-full text-sm font-bold ${p.estoqueAtual <= p.estoqueMinimo ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                       {p.estoqueAtual}
@@ -173,7 +173,7 @@ export default function PastilhasPage() {
                 <input required className="w-full border rounded-lg px-3 py-2" value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Fabricante</label>
+                <label className="block text-sm font-medium mb-1">Fornecedor</label> {/* <-- Alterado */}
                 <select required className="w-full border rounded-lg px-3 py-2" value={form.fabricanteId} onChange={e => setForm({ ...form, fabricanteId: e.target.value })}>
                   <option value="">Selecione...</option>
                   {fabricantes?.map((f: any) => <option key={f.id} value={f.id}>{f.nome}</option>)}

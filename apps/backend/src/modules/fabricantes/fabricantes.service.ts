@@ -15,7 +15,7 @@ export class FabricantesService {
 
   async findOne(id: string) {
     const f = await this.repo.findOne({ where: { id } });
-    if (!f) throw new NotFoundException('Fabricante não encontrado');
+    if (!f) throw new NotFoundException('Fornecedor não encontrado');
     return f;
   }
 
