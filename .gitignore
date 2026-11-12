@@ -11,3 +11,4 @@ coverage/
 *.tfstate
 *.tfstate.*
 .aws/
+.idea/
