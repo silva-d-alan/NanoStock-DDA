@@ -7,6 +7,7 @@ export default function FabricantesPage() {
   const [modalAberto, setModalAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState({ nome: '', cnpj: '', contato: '' });
+  const [busca, setBusca] = useState('');
 
   const { data: fabricantes, isLoading } = useQuery({
     queryKey: ['fabricantes'],
@@ -64,6 +65,15 @@ export default function FabricantesPage() {
         </button>
       </div>
 
+      {/* CAMPO DE BUSCA */}
+      <input
+        type="text"
+        placeholder="Buscar fornecedor pelo nome..."
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        className="w-full mb-4 p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
+      />
+
       {isLoading ? (
         <p>Carregando...</p>
       ) : (
@@ -78,17 +88,22 @@ export default function FabricantesPage() {
               </tr>
             </thead>
             <tbody>
-              {fabricantes?.map((f: any) => (
-                <tr key={f.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="p-4 font-medium">{f.nome}</td>
-                  <td className="p-4 text-slate-500">{f.cnpj || '-'}</td>
-                  <td className="p-4 text-slate-500">{f.contato || '-'}</td>
-                  <td className="p-4 text-center">
-                    <button onClick={() => abrirEdicao(f)} className="text-blue-600 hover:text-blue-800 font-medium text-sm mr-3">Editar</button>
-                    <button onClick={() => { if(window.confirm('Excluir este fornecedor?')) excluirMutation.mutate(f.id) }} className="text-red-600 hover:text-red-800 font-medium text-sm">Excluir</button>
-                  </td>
-                </tr>
-              ))}
+              {/* FILTRO APLICADO CORRETAMENTE */}
+              {fabricantes
+                ?.filter((f: any) => f.nome.toLowerCase().includes(busca.toLowerCase()))
+                .map((f: any) => {
+                  return (
+                    <tr key={f.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="p-4 font-medium">{f.nome}</td>
+                      <td className="p-4 text-slate-500">{f.cnpj || '-'}</td>
+                      <td className="p-4 text-slate-500">{f.contato || '-'}</td>
+                      <td className="p-4 text-center">
+                        <button onClick={() => abrirEdicao(f)} className="text-blue-600 hover:text-blue-800 font-medium text-sm mr-3">Editar</button>
+                        <button onClick={() => { if(window.confirm('Excluir este fornecedor?')) excluirMutation.mutate(f.id) }} className="text-red-600 hover:text-red-800 font-medium text-sm">Excluir</button>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
