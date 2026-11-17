@@ -7,6 +7,8 @@ import MovimentacoesPage from './pages/MovimentacoesPage';
 import AlertasPage from './pages/AlertasPage';
 import UsuariosPage from './pages/UsuariosPage'; // <-- APENAS UMA VEZ
 import FabricantesPage from './pages/FabricantesPage';
+import RelatoriosPage from './pages/RelatoriosPage';
+import RotaProtegida from './components/RotaProtegida';
 import Layout from './components/Layout';
 
 
@@ -38,12 +40,12 @@ export default function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            <Route path="pastilhas" element={<PastilhasPage />} />
-            <Route path="fabricantes" element={<FabricantesPage />} />
-            <Route path="movimentacoes" element={<MovimentacoesPage />} />
-            <Route path="alertas" element={<AlertasPage />} />
-            <Route path="usuarios" element={<UsuariosPage />} />
-         
+            <Route path="pastilhas" element={<RotaProtegida rota="/pastilhas"><PastilhasPage /></RotaProtegida>} />
+            <Route path="fabricantes" element={<RotaProtegida rota="/fabricantes"><FabricantesPage /></RotaProtegida>} />
+            <Route path="movimentacoes" element={<RotaProtegida rota="/movimentacoes"><MovimentacoesPage /></RotaProtegida>} />
+            <Route path="alertas" element={<RotaProtegida rota="/alertas"><AlertasPage /></RotaProtegida>} />
+            <Route path="relatorios" element={<RotaProtegida rota="/relatorios"><RelatoriosPage /></RotaProtegida>} />
+            <Route path="usuarios" element={<RotaProtegida rota="/usuarios"><UsuariosPage /></RotaProtegida>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
