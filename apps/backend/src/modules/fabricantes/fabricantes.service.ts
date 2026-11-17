@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Fabricante } from './fabricante.entity';
@@ -19,8 +19,10 @@ export class FabricantesService {
     return f;
   }
 
+  /** RF02 */
   criar(dto: Partial<Fabricante>) {
-    return this.repo.save(this.repo.create(dto));
+    if (!dto.nome?.trim()) throw new BadRequestException('Nome do fornecedor é obrigatório (RF02)');
+    return this.repo.save(this.repo.create({ ...dto, nome: dto.nome.trim() }));
   }
 
   async atualizar(id: string, dto: Partial<Fabricante>) {
@@ -30,7 +32,12 @@ export class FabricantesService {
   }
 
   async remover(id: string) {
-    const f = await this.findOne(id);
+    const f = await this.repo.findOne({ where: { id }, relations: { pastilhas: true } });
+    if (!f) throw new NotFoundException('Fornecedor não encontrado');
+    // RF02 – o vínculo com os itens de estoque não pode ficar órfão
+    if (f.pastilhas?.length) {
+      throw new ConflictException('Fornecedor vinculado a itens de estoque não pode ser excluído (RF02)');
+    }
     return this.repo.remove(f);
   }
 }

@@ -19,6 +19,10 @@ export class Alerta {
   @Column({ type: 'varchar', length: 20, default: 'ATIVO' })
   status: 'ATIVO' | 'RESOLVIDO';
 
+  /** RN03 – perfis que devem receber o alerta. */
+  @Column({ type: 'simple-array', default: 'ALMOXARIFE,COMPRADOR' })
+  destinatarios: string[];
+
   @CreateDateColumn()
   dataGeracao: Date;
 }
