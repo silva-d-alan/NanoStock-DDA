@@ -49,7 +49,10 @@ export default function Layout() {
 
         <div className="p-4 border-t border-slate-800">
           <p className="text-sm text-slate-400 mb-2">Logado como:</p>
-          <p className="font-medium mb-4">{usuario.nome}</p>
+          <p className="font-medium mb-1">{usuario.nome}</p>
+          <span className="inline-block mb-4 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+            {usuario.perfil}
+          </span>
           <button
             onClick={sair}
             className="w-full bg-slate-800 hover:bg-red-600 text-white py-2 rounded-lg transition-colors"
