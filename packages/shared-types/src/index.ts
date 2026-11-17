@@ -27,6 +27,7 @@ export interface PastilhaDTO {
   unidade: string;
   estoqueMinimo: number;
   estoqueAtual: number;
+  ativo: boolean;
 }
 
 export interface CriarPastilhaDTO {
@@ -38,11 +39,25 @@ export interface CriarPastilhaDTO {
   estoqueMinimo: number;
 }
 
-export type TipoMovimentacao = 'ENTRADA' | 'SAIDA';
+/** AJUSTE é gerado apenas pelo ajuste manual de inventário (RF14). */
+export type TipoMovimentacao = 'ENTRADA' | 'SAIDA' | 'AJUSTE';
+
+/** RN09 – setores de destino permitidos em uma saída. */
+export type DestinoSaida = 'PRODUCAO' | 'MANUTENCAO' | 'TERCEIROS';
 
 export interface CriarMovimentacaoDTO {
   pastilhaId: string;
-  tipo: TipoMovimentacao;
+  tipo: 'ENTRADA' | 'SAIDA';
   quantidade: number;
+  /** Obrigatória quando tipo = ENTRADA (RF04). */
+  notaFiscal?: string;
+  /** Obrigatório quando tipo = SAIDA (RF05/RN09). */
+  destino?: DestinoSaida;
   observacao?: string;
+}
+
+export interface AjusteInventarioDTO {
+  pastilhaId: string;
+  quantidadeContada: number;
+  justificativa: string;
 }

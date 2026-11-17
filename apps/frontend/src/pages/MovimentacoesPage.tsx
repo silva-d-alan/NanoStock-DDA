@@ -3,11 +3,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import MovimentacaoForm from '../components/MovimentacaoForm';
+import AjusteInventarioForm from '../components/AjusteInventarioForm';
+import { baixarCSV } from '../lib/csv';
+import { detalheMovimentacao, type AjusteInput, type MovimentacaoInput } from '../lib/estoque';
+
+const COR_TIPO: Record<string, string> = {
+  ENTRADA: 'bg-green-100 text-green-700',
+  SAIDA: 'bg-orange-100 text-orange-700',
+  AJUSTE: 'bg-purple-100 text-purple-700',
+};
 
 export default function MovimentacoesPage() {
   const queryClient = useQueryClient();
-  const [modalAberto, setModalAberto] = useState(false);
-  const [form, setForm] = useState({ pastilhaId: '', tipo: 'ENTRADA', quantidade: 1, observacao: '' });
+  const [modal, setModal] = useState<'movimentacao' | 'ajuste' | null>(null);
 
   // Histórico de movimentações
   const { data: movimentacoes, isLoading } = useQuery({
@@ -27,24 +36,55 @@ export default function MovimentacoesPage() {
     },
   });
 
-  // Registrar movimentação
+  function aoSalvar() {
+    queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
+    queryClient.invalidateQueries({ queryKey: ['pastilhas'] });
+    queryClient.invalidateQueries({ queryKey: ['alertas'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    setModal(null);
+  }
+
+  function aoFalhar(error: any) {
+    const msg = error.response?.data?.message;
+    alert((Array.isArray(msg) ? msg.join('\n') : msg) || 'Erro ao registrar movimentação.');
+  }
+
+  // Registrar entrada/saída (RF04/RF05)
   const criarMutation = useMutation({
-    mutationFn: (novaMov: any) => api.post('/movimentacoes', novaMov),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['pastilhas'] });
-      queryClient.invalidateQueries({ queryKey: ['alertas'] }); 
-      setModalAberto(false);
-      setForm({ pastilhaId: '', tipo: 'ENTRADA', quantidade: 1, observacao: '' });
-    },
-    onError: (error: any) => {
-      alert(error.response?.data?.message || 'Erro ao registrar movimentação.');
-    }
+    mutationFn: (novaMov: MovimentacaoInput) => api.post('/movimentacoes', novaMov),
+    onSuccess: aoSalvar,
+    onError: aoFalhar,
   });
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    criarMutation.mutate({ ...form, quantidade: Number(form.quantidade) });
+  // Ajuste manual de inventário (RF14)
+  const ajusteMutation = useMutation({
+    mutationFn: (ajuste: AjusteInput) => api.post('/movimentacoes/ajuste', ajuste),
+    onSuccess: aoSalvar,
+    onError: aoFalhar,
+  });
+
+  // RF13 – exportação do histórico em CSV
+  function exportarCSV() {
+    if (!movimentacoes || movimentacoes.length === 0) {
+      alert('Não há movimentações para exportar.');
+      return;
+    }
+    baixarCSV(
+      `movimentacoes_${new Date().toISOString().split('T')[0]}.csv`,
+      movimentacoes.map((m: any) => ({
+        data: new Date(m.data).toLocaleString('pt-BR'),
+        tipo: m.tipo,
+        codigo: m.pastilha?.codigo ?? '',
+        pastilha: m.pastilha?.descricao ?? '',
+        quantidade: m.quantidade,
+        saldoAnterior: m.saldoAnterior ?? '',
+        saldoApos: m.saldoApos ?? '',
+        notaFiscal: m.notaFiscal ?? '',
+        destino: m.destino ?? '',
+        justificativa: m.justificativa ?? '',
+        usuario: m.usuario?.nome ?? '',
+      })),
+    );
   }
 
   // ==========================================
@@ -72,14 +112,15 @@ export default function MovimentacoesPage() {
       m.tipo,
       m.pastilha?.descricao || 'N/A',
       m.quantidade,
+      m.saldoApos ?? '-',
       m.usuario?.nome || 'N/A',
-      m.observacao || '-'
+      detalheMovimentacao(m)
     ]);
 
     // Desenha a tabela no PDF
     autoTable(doc, {
       startY: 35,
-      head: [['Data', 'Tipo', 'Pastilha', 'Qtd', 'Usuário', 'Observação']],
+      head: [['Data', 'Tipo', 'Pastilha', 'Qtd', 'Saldo', 'Usuário', 'NF / Destino / Justificativa']],
       body: dadosTabela,
       theme: 'striped',
       headStyles: { fillColor: [37, 99, 235] }, // Azul bonito
@@ -101,10 +142,22 @@ export default function MovimentacoesPage() {
             onClick={exportarPDF} 
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
           >
-            Exportar Relatório
+            Exportar PDF
+          </button>
+          <button
+            onClick={exportarCSV}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            Exportar CSV
+          </button>
+          <button
+            onClick={() => setModal('ajuste')}
+            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            Ajuste de Inventário
           </button>
           <button 
-            onClick={() => setModalAberto(true)} 
+            onClick={() => setModal('movimentacao')} 
             className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-medium transition-colors"
           >
             + Nova Movimentação
@@ -123,6 +176,8 @@ export default function MovimentacoesPage() {
                 <th className="p-4 font-medium text-slate-600">Tipo</th>
                 <th className="p-4 font-medium text-slate-600">Pastilha</th>
                 <th className="p-4 font-medium text-slate-600 text-center">Qtd</th>
+                <th className="p-4 font-medium text-slate-600 text-center">Saldo</th>
+                <th className="p-4 font-medium text-slate-600">NF / Destino / Justificativa</th>
                 <th className="p-4 font-medium text-slate-600">Usuário</th>
               </tr>
             </thead>
@@ -131,18 +186,22 @@ export default function MovimentacoesPage() {
                 <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="p-4 text-sm text-slate-500">{new Date(m.data).toLocaleString('pt-BR')}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${m.tipo === 'ENTRADA' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${COR_TIPO[m.tipo] ?? ''}`}>
                       {m.tipo}
                     </span>
                   </td>
                   <td className="p-4 font-medium">{m.pastilha?.descricao}</td>
                   <td className="p-4 text-center font-bold">{m.quantidade}</td>
+                  <td className="p-4 text-center text-sm text-slate-500">
+                    {m.saldoApos != null ? `${m.saldoAnterior} → ${m.saldoApos}` : '-'}
+                  </td>
+                  <td className="p-4 text-sm text-slate-500">{detalheMovimentacao(m)}</td>
                   <td className="p-4 text-sm text-slate-500">{m.usuario?.nome}</td>
                 </tr>
               ))}
               {movimentacoes?.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-500">Nenhuma movimentação registrada.</td>
+                  <td colSpan={7} className="p-8 text-center text-slate-500">Nenhuma movimentação registrada.</td>
                 </tr>
               )}
             </tbody>
@@ -150,53 +209,30 @@ export default function MovimentacoesPage() {
         </div>
       )}
 
-      {/* Modal de Movimentação */}
-      {modalAberto && (
+      {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-4">Registrar Movimentação</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Tipo</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="ENTRADA" checked={form.tipo === 'ENTRADA'} onChange={() => setForm({...form, tipo: 'ENTRADA'})} />
-                    Entrada
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="SAIDA" checked={form.tipo === 'SAIDA'} onChange={() => setForm({...form, tipo: 'SAIDA'})} />
-                    Saída
-                  </label>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Pastilha</label>
-                <select required className="w-full border rounded-lg px-3 py-2" value={form.pastilhaId} onChange={e => setForm({...form, pastilhaId: e.target.value})}>
-                  <option value="">Selecione...</option>
-                  {pastilhas?.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.codigo} - {p.descricao} (Estoque: {p.estoqueAtual})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Quantidade</label>
-                <input type="number" required min="1" className="w-full border rounded-lg px-3 py-2" value={form.quantidade} onChange={e => setForm({...form, quantidade: Number(e.target.value)})} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Observação (Opcional)</label>
-                <textarea className="w-full border rounded-lg px-3 py-2" rows={2} value={form.observacao} onChange={e => setForm({...form, observacao: e.target.value})} placeholder="Ex: NF 1234, Setor de Usinagem, etc." />
-              </div>
-              
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setModalAberto(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-                <button type="submit" disabled={criarMutation.isPending} className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800">
-                  {criarMutation.isPending ? 'Salvando...' : 'Confirmar'}
-                </button>
-              </div>
-            </form>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-screen overflow-y-auto">
+            {modal === 'movimentacao' ? (
+              <>
+                <h2 className="text-xl font-bold mb-4">Registrar Movimentação</h2>
+                <MovimentacaoForm
+                  pastilhas={pastilhas ?? []}
+                  onSubmit={(dados) => criarMutation.mutate(dados)}
+                  onCancel={() => setModal(null)}
+                  enviando={criarMutation.isPending}
+                />
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold mb-4">Ajuste Manual de Inventário</h2>
+                <AjusteInventarioForm
+                  pastilhas={pastilhas ?? []}
+                  onSubmit={(dados) => ajusteMutation.mutate(dados)}
+                  onCancel={() => setModal(null)}
+                  enviando={ajusteMutation.isPending}
+                />
+              </>
+            )}
           </div>
         </div>
       )}

@@ -15,16 +15,19 @@ const config: Config = {
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    // TypeScript 6 exige rootDir explícito (TS5011); tsconfig.spec.json define isso só para os testes.
+    '^.+\\.(t|j)s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
   moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
   collectCoverageFrom: [
     'src/**/*.(t|j)s',
-    'libs/**/*.(t|j)s',
-    'apps/**/*.(t|j)s',
+    '!src/**/*.spec.ts',
+    '!src/main.ts',
+    '!src/seed.ts',
   ],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
+  reporters: ['default', '<rootDir>/test/ct-reporter.cjs'],
 };
 
 export default config;

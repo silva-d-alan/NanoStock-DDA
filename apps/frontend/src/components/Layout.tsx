@@ -1,27 +1,18 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { menusDoPerfil, usuarioLogado } from '../lib/permissoes';
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const usuario = JSON.parse(localStorage.getItem('usuario') ?? '{}');
+  const usuario = usuarioLogado();
 
   function sair() {
     localStorage.clear();
     navigate('/login');
   }
 
-  // Agora o menu tem a regra de quem pode ver o quê
-  const todosOsMenus = [
-    { nome: 'Dashboard', path: '/', perfis: ['ADMIN', 'ALMOXARIFE', 'COMPRADOR', 'GESTOR'] },
-    { nome: 'Pastilhas', path: '/pastilhas', perfis: ['ADMIN', 'ALMOXARIFE', 'COMPRADOR'] },
-    { nome: 'Fornecedores', path: '/fabricantes', perfis: ['ADMIN', 'ALMOXARIFE', 'COMPRADOR'] },
-    { nome: 'Movimentações', path: '/movimentacoes', perfis: ['ADMIN', 'ALMOXARIFE'] },
-    { nome: 'Alertas', path: '/alertas', perfis: ['ADMIN', 'COMPRADOR', 'GESTOR'] },
-    { nome: 'Usuários', path: '/usuarios', perfis: ['ADMIN'] }, // <-- Adicionado aqui
-  ];
-
-  // Filtra o menu baseado no perfil do usuário logado
-  const menu = todosOsMenus.filter((item) => item.perfis.includes(usuario.perfil));
+  // RF12 – o menu mostra apenas as rotas liberadas para o perfil logado
+  const menu = menusDoPerfil(usuario.perfil);
 
   return (
     <div className="min-h-screen flex bg-slate-100">

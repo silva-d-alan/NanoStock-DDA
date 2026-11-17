@@ -25,6 +25,10 @@ export class Pastilha {
   @Column({ type: 'int', default: 0 })
   estoqueAtual: number;
 
+  /** RN06 – a exclusão é lógica, para que o código nunca volte a ficar disponível. */
+  @Column({ default: true })
+  ativo: boolean;
+
   @ManyToOne(() => Fabricante, (f) => f.pastilhas, { eager: true })
   @JoinColumn({ name: 'fabricante_id' })
   fabricante: Fabricante;

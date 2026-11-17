@@ -12,4 +12,6 @@ coverage/
 *.tfstate.*
 .aws/
 .idea/
+docs/
+package-lock.json
 dev/

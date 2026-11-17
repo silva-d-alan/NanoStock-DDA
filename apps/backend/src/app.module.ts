@@ -8,6 +8,8 @@ import { FabricantesModule } from './modules/fabricantes/fabricantes.module';
 import { MovimentacoesModule } from './modules/movimentacoes/movimentacoes.module';
 import { AlertasModule } from './modules/alertas/alertas.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AuditoriaModule } from './modules/auditoria/auditoria.module';
+import { RelatoriosModule } from './modules/relatorios/relatorios.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     MovimentacoesModule,
     AlertasModule,
     DashboardModule,
+    AuditoriaModule,
+    RelatoriosModule,
   ],
 })
 export class AppModule {}

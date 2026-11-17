@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { filtrarPastilhas, statusEstoque } from '../lib/estoque';
 
 const formVazio = {
   codigo: '',
@@ -16,6 +17,7 @@ export default function PastilhasPage() {
   const [modalAberto, setModalAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState(formVazio);
+  const [busca, setBusca] = useState('');
 
   const { data: pastilhas, isLoading, isError } = useQuery({
     queryKey: ['pastilhas'],
@@ -44,15 +46,17 @@ export default function PastilhasPage() {
       queryClient.invalidateQueries({ queryKey: ['pastilhas'] });
       fecharModal();
     },
-    onError: () => alert('Erro ao salvar. Verifique o backend.'),
+    onError: (error: any) => alert(error.response?.data?.message || 'Erro ao salvar. Verifique o backend.'),
   });
 
   const excluirMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/pastilhas/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pastilhas'] }),
-    onError: () =>
-      alert('Não foi possível excluir. A pastilha pode ter movimentações registradas.'),
+    onError: (error: any) => alert(error.response?.data?.message || 'Não foi possível excluir a pastilha.'),
   });
+
+  // RF03 – identificação por código ou descrição
+  const pastilhasFiltradas = filtrarPastilhas<any>(pastilhas ?? [], busca);
 
   function abrirNovo() {
     setEditandoId(null);
@@ -85,7 +89,7 @@ export default function PastilhasPage() {
   }
 
   function confirmarExclusao(p: any) {
-    if (confirm(`Excluir a pastilha "${p.descricao}"?`)) excluirMutation.mutate(p.id);
+    if (confirm(`Excluir a pastilha "${p.descricao}"? O código ${p.codigo} não poderá ser reutilizado.`)) excluirMutation.mutate(p.id);
   }
 
   return (
@@ -96,6 +100,15 @@ export default function PastilhasPage() {
           + Nova Pastilha
         </button>
       </div>
+
+      <input
+        type="search"
+        aria-label="Buscar pastilha"
+        placeholder="Buscar por código ou descrição..."
+        className="w-full max-w-md border rounded-lg px-3 py-2 mb-4 bg-white"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+      />
 
       {isError && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
@@ -120,14 +133,14 @@ export default function PastilhasPage() {
               </tr>
             </thead>
             <tbody>
-              {pastilhas?.map((p: any) => (
+              {pastilhasFiltradas.map((p: any) => (
                 <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="p-4 font-mono text-sm">{p.codigo}</td>
                   <td className="p-4 font-medium">{p.descricao}</td>
                   <td className="p-4 text-slate-500">{p.fabricante?.nome || 'Sem fornecedor'}</td> {/* <-- Alterado */}
                   <td className="p-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${p.estoqueAtual <= p.estoqueMinimo ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                      {p.estoqueAtual}
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${statusEstoque(p) === 'ZERADO' ? 'bg-red-600 text-white' : statusEstoque(p) === 'CRITICO' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      {p.estoqueAtual}{statusEstoque(p) === 'ZERADO' && ' – zerado'}
                     </span>
                   </td>
                   <td className="p-4 text-center text-slate-500">{p.estoqueMinimo}</td>
@@ -147,9 +160,11 @@ export default function PastilhasPage() {
                   </td>
                 </tr>
               ))}
-              {pastilhas?.length === 0 && !isError && (
+              {pastilhasFiltradas.length === 0 && !isError && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">Nenhuma pastilha cadastrada.</td>
+                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                    {busca ? 'Nenhuma pastilha encontrada para a busca.' : 'Nenhuma pastilha cadastrada.'}
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -166,7 +181,8 @@ export default function PastilhasPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Código</label>
-                <input required className="w-full border rounded-lg px-3 py-2" value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} />
+                {/* RN06 – o código é único e não pode ser alterado depois do cadastro */}
+                <input required disabled={!!editandoId} className="w-full border rounded-lg px-3 py-2 disabled:bg-slate-100 disabled:text-slate-500" value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Descrição</label>
