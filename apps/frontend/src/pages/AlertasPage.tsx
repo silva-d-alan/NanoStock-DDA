@@ -43,7 +43,11 @@ export default function AlertasPage() {
                 <p className="text-xs text-slate-400 mt-2">Gerado em: {new Date(alerta.dataGeracao).toLocaleString('pt-BR')}</p>
               </div>
               <button 
-                onClick={() => resolverMutation.mutate(alerta.id)}
+                onClick={() => {
+                  if (window.confirm('Deseja marcar este alerta como resolvido?')) {
+                    resolverMutation.mutate(alerta.id);
+                  }
+                }}
                 disabled={resolverMutation.isPending}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >

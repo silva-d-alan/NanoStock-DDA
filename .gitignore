@@ -14,3 +14,4 @@ coverage/
 .idea/
 docs/
 package-lock.json
+dev/
