@@ -15,3 +15,4 @@ coverage/
 docs/
 package-lock.json
 dev/
+*.tfvars

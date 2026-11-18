@@ -1,0 +1,52 @@
+#!/bin/bash
+# Bootstrap da instância: instala Docker, clona o repositório e sobe a aplicação.
+# Log completo em /var/log/nanostock-setup.log
+set -euxo pipefail
+exec > /var/log/nanostock-setup.log 2>&1
+
+APP_DIR=/opt/nanostock
+
+# Swap de 2 GB: o build do backend/frontend (npm) consome bastante memória
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -y docker.io docker-compose-v2 git openssl
+systemctl enable --now docker
+
+if [ ! -d "$APP_DIR/.git" ]; then
+  git clone --depth 1 --branch "${repo_branch}" "${repo_url}" "$APP_DIR"
+fi
+cd "$APP_DIR"
+
+cat > docker-compose.prod.yml <<'COMPOSE_EOF'
+${compose_file}
+COMPOSE_EOF
+
+cat > nginx.prod.conf <<'NGINX_EOF'
+${nginx_conf}
+NGINX_EOF
+
+# Frontend chama a API na mesma origem (/v1), via proxy do nginx
+echo 'VITE_API_URL=/' > apps/frontend/.env.production
+
+# Segredos gerados na própria instância (não ficam no Terraform)
+if [ ! -f .env ]; then
+  umask 077
+  cat > .env <<ENV_EOF
+DATABASE_PASSWORD=$(openssl rand -hex 24)
+JWT_SECRET=$(openssl rand -hex 32)
+SEED_SENHA_ADMIN='${seed_admin_password}'
+SEED_SENHA_PADRAO='${seed_default_password}'
+ENV_EOF
+fi
+
+docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+
+echo "NanoStock-DDA: setup concluido"

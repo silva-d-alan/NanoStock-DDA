@@ -1,0 +1,53 @@
+# Compose de produção (gerado na instância pelo user_data).
+# Diferenças em relação ao docker-compose.yml local:
+#  - apenas o frontend publica porta (80); postgres e backend ficam só na rede interna
+#  - credenciais vêm do arquivo .env gerado na instância
+#  - nginx do frontend repassa /v1 para o backend
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: dda_estoque
+    volumes:
+      - dda-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dda_estoque"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_NAME: dda_estoque
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 8h
+      PORT: "3000"
+      SEED_SENHA_ADMIN: ${SEED_SENHA_ADMIN}
+      SEED_SENHA_PADRAO: ${SEED_SENHA_PADRAO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./apps/frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+
+volumes:
+  dda-postgres-data:
